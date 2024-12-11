@@ -1,15 +1,30 @@
 {
-  "name": "black-myth-wukong",
-  "version": "1.0.50",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "bun run --watch src/index.ts"
-  },
-  "dependencies": {
-    "elysia": "latest"
-  },
-  "devDependencies": {
-    "bun-types": "latest"
-  },
-  "module": "src/index.js"
+	"name": "black-myth-wukong",
+	"version": "1.0.50",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"dev:api": "bun run --watch src/index.ts",
+		"dev:scraper": "bun run src/scraper/index.ts",
+		"generate": "drizzle-kit generate",
+		"migrate": "drizzle-kit migrate",
+		"studio": "drizzle-kit studio",
+		"check": "biome check --write .",
+		"scrape": "bun run src/scraper/index.ts"
+	},
+	"dependencies": {
+		"@supabase/supabase-js": "^2.47.5",
+		"cheerio": "^1.0.0",
+		"dotenv": "^16.4.7",
+		"drizzle-orm": "^0.38.0",
+		"elysia": "latest",
+		"postgres": "^3.4.5"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"bun-types": "latest",
+		"drizzle-kit": "^0.30.0",
+		"tsx": "^4.19.2"
+	},
+	"module": "src/index.js",
+	"trustedDependencies": ["@biomejs/biome"]
 }
