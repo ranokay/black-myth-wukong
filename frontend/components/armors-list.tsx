@@ -10,6 +10,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { API_URL } from "@/lib/config";
 import type { Armor } from "@/lib/types";
 import { useEffect, useState } from "react";
 
@@ -20,7 +21,7 @@ export function ArmorsList() {
 	const [typeFilter, setTypeFilter] = useState<string | null>(null);
 
 	useEffect(() => {
-		fetch("http://localhost:5001/armors")
+		fetch(`${API_URL}/armors`)
 			.then((res) => res.json())
 			.then(setArmors);
 	}, []);

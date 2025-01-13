@@ -10,6 +10,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { API_URL } from "@/lib/config";
 import type { Weapon } from "@/lib/types";
 import { useEffect, useState } from "react";
 
@@ -19,7 +20,7 @@ export function WeaponsList() {
 	const [rarityFilter, setRarityFilter] = useState<string | null>(null);
 
 	useEffect(() => {
-		fetch("http://localhost:5001/weapons")
+		fetch(`${API_URL}/weapons`)
 			.then((res) => res.json())
 			.then(setWeapons);
 	}, []);

@@ -3,6 +3,7 @@
 	"version": "1.0.50",
 	"module": "src/index.js",
 	"scripts": {
+		"build": "bun build --compile --minify --target bun --outfile server ./index.ts",
 		"api": "bun run --watch index.ts",
 		"scraper": "bun run scraper/index.ts",
 		"generate": "drizzle-kit generate",
