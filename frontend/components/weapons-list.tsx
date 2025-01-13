@@ -10,20 +10,17 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { API_URL } from "@/lib/config";
 import type { Weapon } from "@/lib/types";
 import { useEffect, useState } from "react";
 
-export function WeaponsList() {
-	const [weapons, setWeapons] = useState<Weapon[]>([]);
-	const [filteredWeapons, setFilteredWeapons] = useState<Weapon[]>([]);
-	const [rarityFilter, setRarityFilter] = useState<string | null>(null);
+interface WeaponsListProps {
+	weapons: Weapon[];
+	isLoading: boolean;
+}
 
-	useEffect(() => {
-		fetch(`${API_URL}/weapons`)
-			.then((res) => res.json())
-			.then(setWeapons);
-	}, []);
+export function WeaponsList({ weapons, isLoading }: WeaponsListProps) {
+	const [filteredWeapons, setFilteredWeapons] = useState<Weapon[]>(weapons);
+	const [rarityFilter, setRarityFilter] = useState<string | null>(null);
 
 	useEffect(() => {
 		let filtered = weapons;
@@ -36,6 +33,10 @@ export function WeaponsList() {
 	const rarityOptions = Array.from(
 		new Set(weapons.map((weapon) => weapon.rarity).filter(Boolean)),
 	);
+
+	if (isLoading) {
+		return <Card className="p-6">Loading...</Card>;
+	}
 
 	return (
 		<Card className="p-6">

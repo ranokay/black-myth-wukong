@@ -10,21 +10,18 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { API_URL } from "@/lib/config";
 import type { Armor } from "@/lib/types";
 import { useEffect, useState } from "react";
 
-export function ArmorsList() {
-	const [armors, setArmors] = useState<Armor[]>([]);
-	const [filteredArmors, setFilteredArmors] = useState<Armor[]>([]);
+interface ArmorsListProps {
+	armors: Armor[];
+	isLoading: boolean;
+}
+
+export function ArmorsList({ armors, isLoading }: ArmorsListProps) {
+	const [filteredArmors, setFilteredArmors] = useState<Armor[]>(armors);
 	const [rarityFilter, setRarityFilter] = useState<string | null>(null);
 	const [typeFilter, setTypeFilter] = useState<string | null>(null);
-
-	useEffect(() => {
-		fetch(`${API_URL}/armors`)
-			.then((res) => res.json())
-			.then(setArmors);
-	}, []);
 
 	useEffect(() => {
 		let filtered = armors;
@@ -43,6 +40,10 @@ export function ArmorsList() {
 	const typeOptions = Array.from(
 		new Set(armors.map((armor) => armor.type).filter(Boolean)),
 	);
+
+	if (isLoading) {
+		return <Card className="p-6">Loading...</Card>;
+	}
 
 	return (
 		<Card className="p-6">
