@@ -1,6 +1,11 @@
 import { load } from 'cheerio'
+import { eq } from 'drizzle-orm'
 import { db } from '../../shared/db'
-import { type NewArmor, armors } from '../../shared/db/schema/armors'
+import {
+	type Armor,
+	type NewArmor,
+	armors,
+} from '../../shared/db/schema/armors'
 import { BaseScraper } from './base.scraper'
 
 export class ArmorsScraper extends BaseScraper {
@@ -8,54 +13,110 @@ export class ArmorsScraper extends BaseScraper {
 
 	async scrapeArmors() {
 		try {
-			console.log('\n🛡️  Starting armor scraping...')
 			const html = await this.rateLimitedFetch(`${this.baseUrl}/armors`)
 			const $ = load(html)
 
-			const armorLinks = $('.pi-image-thumbnail')
-				.map((_, el) => {
-					return $(el).parent().attr('href')
-				})
+			const armorItems = $('.wikia-gallery-item .lightbox-caption a')
+				.map((_, el) => ({
+					href: $(el).attr('href'),
+					name: $(el).text().trim(),
+				}))
 				.get()
+				.filter((item): item is { href: string; name: string } =>
+					Boolean(item.href && item.name),
+				)
 
-			console.log(`📝 Found ${armorLinks.length} armors to scrape`)
+			console.log(`📝 Found ${armorItems.length} armors to process`)
 
-			for (const [index, link] of armorLinks.entries()) {
-				console.log(`\n🔍 Scraping armor ${index + 1}/${armorLinks.length}`)
-				await this.scrapeArmorDetails(link)
+			// Get all existing armors with their current data
+			const existingArmors = await db.select().from(armors)
+			const existingArmorsMap = new Map(existingArmors.map((a) => [a.name, a]))
+
+			for (const [index, item] of armorItems.entries()) {
+				console.log(`\n🔍 Processing armor ${index + 1}/${armorItems.length}`)
+				const fullUrl = item.href.startsWith('http')
+					? item.href
+					: `https://blackmythwukong.fandom.com${item.href}`
+
+				const existingArmor = existingArmorsMap.get(item.name)
+				await this.scrapeArmorDetails(fullUrl, existingArmor)
 			}
 
-			console.log('\n✅ Armor scraping completed!')
+			console.log('\n✅ Armors processing completed!')
 		} catch (error) {
-			console.error('❌ Error scraping armors:', error)
+			console.error('❌ Error processing armors:', error)
 		}
 	}
 
-	private async scrapeArmorDetails(url: string) {
+	private async scrapeArmorDetails(url: string, existingArmor?: Armor) {
 		try {
 			const html = await this.rateLimitedFetch(url)
 			const $ = load(html)
 
-			const armor: NewArmor = {
-				name: $('[data-source="name"]').text().trim(),
-				type: $('[data-source="type"] .pi-data-value').text().trim(),
-				rarity: $('[data-source="rarity"] .pi-data-value').text().trim(),
-				defense: Number.parseInt(
-					$('[data-source="defense"] .pi-data-value').text().trim(),
-					10,
-				),
-				set_bonus: $('[data-source="setbonus"] .pi-data-value').text().trim(),
-				set: $('[data-source="set"] .pi-data-value').text().trim(),
-				effect: $('.mw-parser-output p').first().text().trim(),
+			const name = $('h1.page-header__title').text().trim()
+			const dataElements = $('[data-source]')
+
+			// Scrape new data
+			const newData: NewArmor = {
+				name,
+				type: '',
+				rarity: '',
+				defense: 0,
+				set_bonus: '',
+				set: '',
+				effect: $('h2:contains("Description") + p').text().trim(),
 			}
 
-			console.log('📦 Scraped armor data:', armor)
-			console.log('💾 Saving to database...')
+			dataElements.each((_, el) => {
+				const dataSource = $(el).attr('data-source')
+				const value = $(el).find('.pi-data-value').text().trim()
 
-			await db.insert(armors).values(armor)
-			console.log('✅ Saved to database successfully!')
+				switch (dataSource) {
+					case 'type':
+						newData.type = value
+						break
+					case 'rarity':
+						newData.rarity = value
+						break
+					case 'defense':
+						newData.defense = Number.parseInt(value.split('/')[0], 10)
+						break
+					case 'setbonus':
+						newData.set_bonus = value
+						break
+					case 'set':
+						newData.set = value
+						break
+				}
+			})
+
+			if (existingArmor) {
+				// Check if data has changed
+				const hasChanged =
+					existingArmor.type !== newData.type ||
+					existingArmor.rarity !== newData.rarity ||
+					existingArmor.defense !== newData.defense ||
+					existingArmor.set_bonus !== newData.set_bonus ||
+					existingArmor.set !== newData.set ||
+					existingArmor.effect !== newData.effect
+
+				if (hasChanged) {
+					console.log('🔄 Updating existing armor data...')
+					await db
+						.update(armors)
+						.set(newData)
+						.where(eq(armors.id, existingArmor.id))
+					console.log('✅ Armor updated successfully!')
+				} else {
+					console.log('⏩ No changes detected, skipping update')
+				}
+			} else {
+				console.log('📦 Saving new armor data...')
+				await db.insert(armors).values(newData)
+				console.log('✅ New armor saved successfully!')
+			}
 		} catch (error) {
-			console.error('❌ Error scraping armor details:', error)
+			console.error('❌ Error processing armor details:', error)
 		}
 	}
 }

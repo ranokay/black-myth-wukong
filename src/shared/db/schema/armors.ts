@@ -9,7 +9,6 @@ export const armors = pgTable('armors', {
 	set: varchar('set', { length: 255 }),
 	effect: text('effect'),
 	type: varchar('type', { length: 100 }),
-	image_url: varchar('image_url', { length: 255 }),
 })
 
 export type Armor = typeof armors.$inferSelect
