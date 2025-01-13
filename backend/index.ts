@@ -6,9 +6,7 @@ import { weaponsRouter } from "./api/routes/weapons";
 const app = new Elysia()
 	.use(
 		cors({
-			origin: process.env.VERCEL_URL
-				? [`https://${process.env.VERCEL_URL}`, "http://localhost:3000"]
-				: "http://localhost:3000",
+			origin: process.env.FRONTEND_URL || "http://localhost:3000",
 			credentials: true,
 		}),
 	)
